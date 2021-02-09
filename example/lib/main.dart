@@ -4,26 +4,17 @@ import 'package:biometric_storage/biometric_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:logging_appenders/logging_appenders.dart';
-
-final MemoryAppender logMessages = MemoryAppender();
 
 final _logger = Logger('main');
+var logs = "";
 
 void main() {
+  _logger.onRecord.listen((record) {
+    logs += record.message + "\n";
+  });
   Logger.root.level = Level.ALL;
-  PrintAppender().attachToLogger(Logger.root);
-  logMessages.attachToLogger(Logger.root);
   _logger.fine('Application launched. (v2)');
-  _setTargetPlatformForDesktop();
   runApp(MyApp());
-}
-
-/// If the current platform is desktop, override the default platform to
-/// a supported platform (iOS for macOS, Android for Linux and Windows).
-/// Otherwise, do nothing.
-void _setTargetPlatformForDesktop() {
-  // no longer required.
 }
 
 class StringBufferWrapper with ChangeNotifier {
@@ -38,37 +29,6 @@ class StringBufferWrapper with ChangeNotifier {
   String toString() => _buffer.toString();
 }
 
-class ShortFormatter extends LogRecordFormatter {
-  @override
-  StringBuffer formatToStringBuffer(LogRecord rec, StringBuffer sb) {
-    sb.write(
-        '${rec.time.hour}:${rec.time.minute}:${rec.time.second} ${rec.level.name} '
-        '${rec.message}');
-
-    if (rec.error != null) {
-      sb.write(rec.error);
-    }
-    // ignore: avoid_as
-    final stackTrace = rec.stackTrace ??
-        (rec.error is Error ? (rec.error as Error).stackTrace : null);
-    if (stackTrace != null) {
-      sb.write(stackTrace);
-    }
-    return sb;
-  }
-}
-
-class MemoryAppender extends BaseLogAppender {
-  MemoryAppender() : super(ShortFormatter());
-
-  final StringBufferWrapper log = StringBufferWrapper();
-
-  @override
-  void handle(LogRecord record) {
-    log.writeln(formatter.format(record));
-  }
-}
-
 class MyApp extends StatefulWidget {
   @override
   _MyAppState createState() => _MyAppState();
@@ -76,10 +36,10 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final String baseName = 'default';
-  BiometricStorageFile _authStorage;
-  BiometricStorageFile _storage;
-  BiometricStorageFile _customPrompt;
-  BiometricStorageFile _noConfirmation;
+  BiometricStorageFile? _authStorage;
+  BiometricStorageFile? _storage;
+  BiometricStorageFile? _customPrompt;
+  BiometricStorageFile? _noConfirmation;
 
   final TextEditingController _writeController =
       TextEditingController(text: 'Lorem Ipsum');
@@ -87,13 +47,11 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    logMessages.log.addListener(_logChanged);
     _checkAuthenticate();
   }
 
   @override
   void dispose() {
-    logMessages.log.removeListener(_logChanged);
     super.dispose();
   }
 
@@ -172,7 +130,7 @@ class _MyAppState extends State<MyApp> {
                     const Text('Biometric Authentication',
                         style: TextStyle(fontWeight: FontWeight.bold)),
                     StorageActions(
-                        storageFile: _authStorage,
+                        storageFile: _authStorage!,
                         writeController: _writeController),
                     const Divider(),
                   ]),
@@ -182,7 +140,7 @@ class _MyAppState extends State<MyApp> {
                     const Text('Unauthenticated',
                         style: TextStyle(fontWeight: FontWeight.bold)),
                     StorageActions(
-                        storageFile: _storage,
+                        storageFile: _storage!,
                         writeController: _writeController),
                     const Divider(),
                   ]),
@@ -192,7 +150,7 @@ class _MyAppState extends State<MyApp> {
                     const Text('Custom Authentication Prompt (Android)',
                         style: TextStyle(fontWeight: FontWeight.bold)),
                     StorageActions(
-                        storageFile: _customPrompt,
+                        storageFile: _customPrompt!,
                         writeController: _writeController),
                     const Divider(),
                   ]),
@@ -202,7 +160,7 @@ class _MyAppState extends State<MyApp> {
                     const Text('No Confirmation Prompt (Android)',
                         style: TextStyle(fontWeight: FontWeight.bold)),
                     StorageActions(
-                        storageFile: _noConfirmation,
+                        storageFile: _noConfirmation!,
                         writeController: _writeController),
                   ]),
             const Divider(),
@@ -219,9 +177,7 @@ class _MyAppState extends State<MyApp> {
                 child: SingleChildScrollView(
                   child: Container(
                     padding: const EdgeInsets.all(16),
-                    child: Text(
-                      logMessages.log.toString(),
-                    ),
+                    child: Text(logs),
                   ),
                   reverse: true,
                 ),
@@ -233,7 +189,7 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  List<Widget> _appArmorButton() => kIsWeb || !Platform.isLinux
+  List<Widget>? _appArmorButton() => kIsWeb || !Platform.isLinux
       ? null
       : [
           RaisedButton(
@@ -254,7 +210,7 @@ class _MyAppState extends State<MyApp> {
 
 class StorageActions extends StatelessWidget {
   const StorageActions(
-      {Key key, @required this.storageFile, @required this.writeController})
+      {Key? key, required this.storageFile, required this.writeController})
       : super(key: key);
 
   final BiometricStorageFile storageFile;

@@ -60,7 +60,7 @@ class AuthException implements Exception {
   AuthException(this.code, this.message);
 
   final AuthExceptionCode code;
-  final String message;
+  final String? message;
 
   @override
   String toString() {
@@ -101,8 +101,8 @@ class AndroidPromptInfo {
         assert(confirmationRequired != null);
 
   final String title;
-  final String subtitle;
-  final String description;
+  final String? subtitle;
+  final String? description;
   final String negativeButton;
   final bool confirmationRequired;
 
@@ -167,13 +167,13 @@ abstract class BiometricStorage extends PlatformInterface {
   /// created in this runtime.
   Future<BiometricStorageFile> getStorage(
     String name, {
-    StorageFileInitOptions options,
+    StorageFileInitOptions? options,
     bool forceInit = false,
     AndroidPromptInfo androidPromptInfo = AndroidPromptInfo.defaultValues,
   });
 
   @protected
-  Future<String> read(
+  Future<String?> read(
     String name,
     AndroidPromptInfo androidPromptInfo,
   );
@@ -207,7 +207,7 @@ class MethodChannelBiometricStorage extends BiometricStorage {
         Platform.isMacOS ||
         Platform.isLinux) {
       return _canAuthenticateMapping[
-          await _channel.invokeMethod<String>('canAuthenticate')];
+          (await _channel.invokeMethod<String>('canAuthenticate'))!]!;
     }
     return CanAuthenticateResponse.unsupported;
   }
@@ -256,7 +256,7 @@ class MethodChannelBiometricStorage extends BiometricStorage {
   @override
   Future<BiometricStorageFile> getStorage(
     String name, {
-    StorageFileInitOptions options,
+    StorageFileInitOptions? options,
     bool forceInit = false,
     AndroidPromptInfo androidPromptInfo = AndroidPromptInfo.defaultValues,
   }) async {
@@ -284,7 +284,7 @@ class MethodChannelBiometricStorage extends BiometricStorage {
   }
 
   @override
-  Future<String> read(
+  Future<String?> read(
     String name,
     AndroidPromptInfo androidPromptInfo,
   ) =>
@@ -297,11 +297,17 @@ class MethodChannelBiometricStorage extends BiometricStorage {
   Future<bool> delete(
     String name,
     AndroidPromptInfo androidPromptInfo,
-  ) =>
-      _transformErrors(_channel.invokeMethod<bool>('delete', <String, dynamic>{
-        'name': name,
-        ..._androidPromptInfoOnlyOnAndroid(androidPromptInfo),
-      }));
+  ) async {
+    return (await _transformErrors<bool?>(
+      _channel.invokeMethod<bool>(
+        'delete',
+        <String, dynamic>{
+          'name': name,
+          ..._androidPromptInfoOnlyOnAndroid(androidPromptInfo),
+        },
+      ),
+    ))!;
+  }
 
   @override
   Future<void> write(
@@ -364,7 +370,7 @@ class BiometricStorageFile {
 
   /// read from the secure file and returns the content.
   /// Will return `null` if file does not exist.
-  Future<String> read() => _plugin.read(name, androidPromptInfo);
+  Future<String?> read() => _plugin.read(name, androidPromptInfo);
 
   /// Write content of this file. Previous value will be overwritten.
   Future<void> write(String content) =>
