@@ -17,7 +17,7 @@ dependencies:
   logging: ^1.0.0
   plugin_platform_interface: ^1.1.0-nullsafety.2
 
-  ffi: ^0.3.0-nullsafety.2
+  ffi: ^1.0.0
   win32: ^2.0.0-nullsafety.10
 
 dev_dependencies:
